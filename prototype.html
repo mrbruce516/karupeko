@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>karupeko - 极致美学原型</title>
+    <!-- 引入 FontAwesome 图标，用于底部 Tab 及加号键 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* 还原最舒适的落日透光玻璃配色体系 */
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+            
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-muted: rgba(29, 29, 31, 0.35);
+            
+            --food-accent: #ff7b7b; /* 苹果级淡红 */
+            --water-accent: #54a0ff; /* 极客浅蓝 */
+            
+            --transition-bounce: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 20px 0;
+        }
+
+        /* 模拟真实的 iPhone 实物边框与尺寸 */
+        .phone-container {
+            width: 393px;
+            height: 852px;
+            border-radius: 50px;
+            /* 完美还原温暖舒缓的落日色彩渐变背景，突出高透高斯模糊材质 */
+            background: linear-gradient(160deg, #ffecd2 0%, #fcb69f 50%, #a1c4fd 100%);
+            position: relative;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), inset 0 0 2px 2px rgba(255,255,255,0.1);
+            overflow: hidden;
+            border: 12px solid #222;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 灵动岛 */
+        .dynamic-island {
+            width: 110px;
+            height: 30px;
+            background: #000;
+            border-radius: 20px;
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+        }
+
+        /* 统一的高端磨砂玻璃拟态组件 */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .nav-bar {
+            padding: 60px 24px 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .nav-bar h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.8px;
+            color: var(--text-primary);
+        }
+
+        .date-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        /* 个人图标已修改为纯展示静态状态 */
+        .user-profile-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        /* 主体内容滚动画布 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 140px 20px;
+            scrollbar-width: none;
+        }
+        .main-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .view-panel {
+            display: none;
+            animation: sheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        .dashboard-card {
+            border-radius: 28px;
+            padding: 22px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-info h2 {
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.1;
+        }
+
+        .food-text { color: var(--food-accent); }
+        .water-text { color: var(--water-accent); }
+
+        .chart-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .chart-info .sub-detail {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.85;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* 精细的环形进度条 */
+        .progress-circle {
+            position: relative;
+            width: 84px;
+            height: 84px;
+        }
+
+        .progress-circle svg {
+            transform: rotate(-90deg);
+            width: 84px;
+            height: 84px;
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+        }
+
+        .progress-circle .track {
+            stroke: rgba(255, 255, 255, 0.25);
+        }
+
+        .progress-circle .fill-bar {
+            stroke-dasharray: 226;
+            stroke-dashoffset: 226;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .progress-circle .fill-bar.food-fill { stroke: var(--food-accent); }
+        .progress-circle .fill-bar.water-fill { stroke: var(--water-accent); }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 18px 4px 10px 4px;
+        }
+        
+        .section-header span {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .section-header .counter-badge {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.45);
+            padding: 2px 8px;
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* 极致简约的无框一体式记录大板 */
+        .minimal-list-card {
+            border-radius: 24px;
+            padding: 8px 18px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 行内文本流布局：纯文字，零图标，零干扰 */
+        .minimal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            position: relative;
+            cursor: default; /* 改为默认状态，不触发点击状态 */
+        }
+
+        /* 超轻量级的灰色隔离线 */
+        .minimal-row:not(:last-child) {
+            border-bottom: 0.5px solid rgba(29, 29, 31, 0.08);
+        }
+
+        .row-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 70%;
+        }
+
+        /* 食物或纯水名称 */
+        .row-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+            line-height: 1.3;
+        }
+
+        /* 时间备注 */
+        .row-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* 右侧数值 */
+        .row-metric {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            text-align: right;
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+        }
+        
+        .row-metric .unit {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .ios-tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 84px;
+            border-top: 1px solid var(--glass-border);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding-bottom: 16px;
+            z-index: 900;
+        }
+
+        .tab-btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-bounce);
+            gap: 4px;
+        }
+
+        .tab-btn i {
+            font-size: 20px;
+            transition: var(--transition-bounce);
+        }
+
+        /* 纯文本加呼吸外光的标签高亮 */
+        .tab-btn.active.food-tab {
+            color: var(--food-accent);
+        }
+
+        .tab-btn.active.water-tab {
+            color: var(--water-accent);
+        }
+
+        .tab-btn.active i {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .tab-btn span {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        /* 微凸起的高雅加号悬浮按钮 */
+        .action-fab {
+            position: absolute;
+            bottom: 102px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 10px 24px -6px rgba(0,0,0,0.12);
+            transition: var(--transition-bounce);
+            z-index: 850;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .fab-food { background: linear-gradient(135deg, #ff9f9f, var(--food-accent)); }
+        .fab-water { background: linear-gradient(135deg, #70a1ff, var(--water-accent)); }
+        
+        .action-fab:active {
+            transform: scale(0.9) rotate(45deg);
+        }
+
+        /* 轻薄的消息回馈横幅 */
+        .toast-banner {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(29, 29, 31, 0.95);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: var(--transition-bounce);
+            pointer-events: none;
+            z-index: 1100;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .toast-banner.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .bottom-sheet-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(17, 17, 17, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .bottom-sheet-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 32px 32px 0 0;
+            border-top: 1px solid var(--glass-border);
+            padding: 16px 24px 44px 24px;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.15, 0.85, 0.45, 1);
+            z-index: 1001;
+        }
+
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        .sheet-indicator {
+            width: 36px;
+            height: 5px;
+            background: rgba(29, 29, 31, 0.15);
+            border-radius: 3px;
+            margin: 0 auto 20px auto;
+        }
+
+        .sheet-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .sheet-title-row h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .sheet-close-icon {
+            background: rgba(0,0,0,0.04);
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .form-element {
+            margin-bottom: 18px;
+        }
+
+        .form-element label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-element input, .form-element select {
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(29, 29, 31, 0.1);
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            color: var(--text-primary);
+            outline: none;
+            transition: var(--transition-bounce);
+        }
+
+        .form-element input:focus {
+            border-color: var(--food-accent);
+            background: #fff;
+        }
+
+        .water-focused .form-element input:focus {
+            border-color: var(--water-accent);
+        }
+
+        .submit-pill {
+            width: 100%;
+            color: white;
+            padding: 14px;
+            border-radius: 16px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-bounce);
+            margin-top: 12px;
+        }
+
+        .submit-pill.food-btn { background: var(--food-accent); }
+        .submit-pill.water-btn { background: var(--water-accent); }
+
+        .submit-pill:active {
+            transform: scale(0.97);
+        }
+
+        /* 底部苹果虚拟控制指示线 */
+        .home-indicator {
+            width: 136px;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        /* 空值极简提示 */
+        .empty-indicator {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        @keyframes sheetUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 极简 iPhone 外壳 -->
+<div class="phone-container">
+    <div class="dynamic-island"></div>
+    
+    <!-- 轻量提示层 -->
+    <div class="toast-banner" id="toast-banner">已成功记录</div>
+
+    <div class="nav-bar">
+        <div>
+            <div class="date-sub" id="nav-date">6月8日 周一</div>
+            <h1 id="nav-header-title">MoguMogu</h1>
+        </div>
+        <!-- 静态展示的个人头像图标（移除了 onclick 绑定） -->
+        <div class="user-profile-btn">
+            <i class="fa-regular fa-user"></i>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <!-- ==================== MoguMogu 饮食看板 ==================== -->
+        <div id="panel-food" class="view-panel active">
+            <!-- 环形总览卡片 -->
+            <div class="dashboard-card glass-panel">
+                <div class="chart-info">
+                    <h2 class="food-text" id="food-calorie-remain">1,420</h2>
+                    <p>剩余可吃卡路里 (kcal)</p>
+                    <div class="sub-detail" id="food-detail-label">已摄入 580 / 目标 2000</div>
+                </div>
+                <div class="progress-circle">
+                    <svg>
+                        <circle class="track" cx="42" cy="42" r="36"></circle>
+                        <circle id="food-progress-ring" class="fill-bar food-fill" cx="42" cy="42" r="36"></circle>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 列表栏目（完美无图标极简） -->
+            <div class="section-header">
+                <span>今日饮食足迹</span>
+                <span class="counter-badge" id="food-total-count">2 次</span>
+            </div>
+            
+            <div class="minimal-list-card glass-panel" id="food-list-target">
+                <!-- 列表元素动态填充 -->
+            </div>
+        </div>
+
+        <!-- ==================== GokuGoku 喝水看板 ==================== -->
+        <div id="panel-water" class="view-panel">
+            <!-- 环形总览卡片 -->
+            <div class="dashboard-card glass-panel">
+                <div class="chart-info">
+                    <h2 class="water-text" id="water-drunk-value">1,000</h2>
+                    <p>今日已饮纯水 (ml)</p>
+                    <div class="sub-detail" id="water-detail-label">目标 2000 ml · 进度 50%</div>
+                </div>
+                <div class="progress-circle">
+                    <svg>
+                        <circle class="track" cx="42" cy="42" r="36"></circle>
+                        <circle id="water-progress-ring" class="fill-bar water-fill" cx="42" cy="42" r="36"></circle>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 列表栏目（完美无图标极简） -->
+            <div class="section-header">
+                <span>今日喝水足迹</span>
+                <span class="counter-badge" id="water-total-count">3 次</span>
+            </div>
+            
+            <div class="minimal-list-card glass-panel" id="water-list-target">
+                <!-- 列表元素动态填充 -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 极简悬浮按钮 -->
+    <div id="action-add-btn" class="action-fab fab-food" onclick="openBottomSheet()">
+        <i class="fa-solid fa-plus"></i>
+    </div>
+
+    <div class="ios-tab-bar glass-panel">
+        <div class="tab-btn active food-tab" id="tab-food-trigger" onclick="switchMainTab('food')">
+            <i class="fa-solid fa-utensils"></i>
+            <span>MoguMogu</span>
+        </div>
+        <div class="tab-btn water-tab" id="tab-water-trigger" onclick="switchMainTab('water')">
+            <i class="fa-solid fa-droplet"></i>
+            <span>GokuGoku</span>
+        </div>
+    </div>
+
+    <!-- 虚拟返回条 -->
+    <div class="home-indicator"></div>
+
+    <div class="bottom-sheet-backdrop" id="sheet-backdrop" onclick="closeBottomSheet()"></div>
+    
+    <div class="bottom-sheet" id="sheet-panel">
+        <div class="sheet-indicator"></div>
+        <div class="sheet-title-row">
+            <h3 id="sheet-main-title">添加饮食记录</h3>
+            <button class="sheet-close-icon" onclick="closeBottomSheet()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <form id="record-form" onsubmit="commitNewRecord(event)">
+            <div class="form-element">
+                <label id="lbl-input-title" for="txt-input-name">食物或餐食</label>
+                <input type="text" id="txt-input-name" placeholder="例如：美式拿铁" required autocomplete="off">
+            </div>
+            
+            <div class="form-element" id="group-meal-selector">
+                <label for="sel-meal-time">时间时段</label>
+                <select id="sel-meal-time">
+                    <option value="早餐">早餐</option>
+                    <option value="午餐">午餐</option>
+                    <option value="晚餐">晚餐</option>
+                    <option value="加餐">零食/加餐</option>
+                </select>
+            </div>
+
+            <div class="form-element" id="group-time-picker" style="display:none;">
+                <label for="txt-time-stamp">饮水时间</label>
+                <input type="time" id="txt-time-stamp">
+            </div>
+
+            <div class="form-element">
+                <label id="lbl-input-metric" for="num-metric-val">热量总量 (kcal)</label>
+                <input type="number" id="num-metric-val" placeholder="请输入热量" required min="1" max="5000">
+            </div>
+
+            <button type="submit" class="submit-pill food-btn" id="btn-sheet-submit">确认记录</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 核心模式：'food' 或 'water'
+    let activeModule = 'food'; 
+    
+    const TARGET_FOOD_KCAL = 2000;
+    const TARGET_WATER_ML = 2000;
+
+    // 默认内置极简演示数据
+    let dataLogsFood = [
+        { id: 101, name: "煎蛋 & 全麦吐司", time: "08:30 · 早餐", value: 320 },
+        { id: 102, name: "慢炖牛肉石锅便当", time: "12:15 · 午餐", value: 260 }
+    ];
+
+    let dataLogsWater = [
+        { id: 201, name: "晨起唤醒水", time: "08:00", value: 350 },
+        { id: 202, name: "黑咖啡 (不计入纯水)", time: "10:30", value: 250 },
+        { id: 203, name: "工作间歇补水", time: "14:00", value: 400 }
+    ];
+
+    function drawFoodPanel() {
+        const listContainer = document.getElementById('food-list-target');
+        const countBadge = document.getElementById('food-total-count');
+        
+        if (dataLogsFood.length === 0) {
+            listContainer.innerHTML = `<div class="empty-indicator">今天还没有任何饮食记录 ~</div>`;
+            countBadge.innerText = `0 次`;
+        } else {
+            countBadge.innerText = `${dataLogsFood.length} 次`;
+            // 移除了点击删除的回调与 active 点击动画
+            listContainer.innerHTML = dataLogsFood.map(log => `
+                <div class="minimal-row">
+                    <div class="row-details">
+                        <span class="row-title">${log.name}</span>
+                        <span class="row-meta">${log.time}</span>
+                    </div>
+                    <div class="row-metric food-text">
+                        +${log.value} <span class="unit">kcal</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 计算与更新卡路里圆环仪表盘
+        const consumed = dataLogsFood.reduce((acc, current) => acc + current.value, 0);
+        const remaining = Math.max(0, TARGET_FOOD_KCAL - consumed);
+        
+        document.getElementById('food-calorie-remain').innerText = remaining.toLocaleString();
+        document.getElementById('food-detail-label').innerText = `已摄入 ${consumed} / 目标 ${TARGET_FOOD_KCAL}`;
+        
+        // 动态SVG进度计算 (r=36, 周长≈226)
+        const percent = Math.min(100, (consumed / TARGET_FOOD_KCAL) * 100);
+        const dashOffset = 226 - (226 * percent) / 100;
+        document.getElementById('food-progress-ring').style.strokeDashoffset = dashOffset;
+    }
+
+    function drawWaterPanel() {
+        const listContainer = document.getElementById('water-list-target');
+        const countBadge = document.getElementById('water-total-count');
+
+        if (dataLogsWater.length === 0) {
+            listContainer.innerHTML = `<div class="empty-indicator">今天还没有喝过水哦</div>`;
+            countBadge.innerText = `0 次`;
+        } else {
+            countBadge.innerText = `${dataLogsWater.length} 次`;
+            // 移除了点击删除的回调与 active 点击动画
+            listContainer.innerHTML = dataLogsWater.map(log => `
+                <div class="minimal-row">
+                    <div class="row-details">
+                        <span class="row-title">${log.name}</span>
+                        <span class="row-meta">${log.time}</span>
+                    </div>
+                    <div class="row-metric water-text">
+                        ${log.value} <span class="unit">ml</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 计算与更新喝水圆环仪表盘
+        const waterDrunk = dataLogsWater.reduce((acc, current) => acc + current.value, 0);
+        const percent = Math.min(100, (waterDrunk / TARGET_WATER_ML) * 100);
+        
+        document.getElementById('water-drunk-value').innerText = waterDrunk.toLocaleString();
+        document.getElementById('water-detail-label').innerText = `目标 ${TARGET_WATER_ML} ml · 进度 ${percent.toFixed(0)}%`;
+
+        const dashOffset = 226 - (226 * percent) / 100;
+        document.getElementById('water-progress-ring').style.strokeDashoffset = dashOffset;
+    }
+
+    function switchMainTab(mode) {
+        activeModule = mode;
+        
+        // 面板切换
+        document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        const navTitle = document.getElementById('nav-header-title');
+        const actionBtn = document.getElementById('action-add-btn');
+
+        if (mode === 'food') {
+            document.getElementById('panel-food').classList.add('active');
+            document.getElementById('tab-food-trigger').classList.add('active');
+            navTitle.innerText = "MoguMogu";
+            actionBtn.className = "action-fab fab-food";
+        } else {
+            document.getElementById('panel-water').classList.add('active');
+            document.getElementById('tab-water-trigger').classList.add('active');
+            navTitle.innerText = "GokuGoku";
+            actionBtn.className = "action-fab fab-water";
+        }
+    }
+
+    function openBottomSheet() {
+        const sheet = document.getElementById('sheet-panel');
+        const backdrop = document.getElementById('sheet-backdrop');
+        const form = document.getElementById('record-form');
+        
+        form.reset();
+
+        const sheetTitle = document.getElementById('sheet-main-title');
+        const nameLabel = document.getElementById('lbl-input-title');
+        const nameInput = document.getElementById('txt-input-name');
+        const valLabel = document.getElementById('lbl-input-metric');
+        const valInput = document.getElementById('num-metric-val');
+        const mealGroup = document.getElementById('group-meal-selector');
+        const timeGroup = document.getElementById('group-time-picker');
+        const submitBtn = document.getElementById('btn-sheet-submit');
+
+        if (activeModule === 'food') {
+            document.body.classList.remove('water-focused');
+            sheetTitle.innerText = "添加饮食记录";
+            nameLabel.innerText = "食物或餐食";
+            nameInput.placeholder = "例如：原味坚果一小袋";
+            valLabel.innerText = "热量总量 (kcal)";
+            valInput.placeholder = "请输入热量数值";
+            mealGroup.style.display = 'block';
+            timeGroup.style.display = 'none';
+            submitBtn.className = "submit-pill food-btn";
+            submitBtn.innerText = "确认记录";
+        } else {
+            document.body.classList.add('water-focused');
+            sheetTitle.innerText = "添加饮水记录";
+            nameLabel.innerText = "饮水来源";
+            nameInput.placeholder = "例如：温开水、气泡水、绿茶";
+            valLabel.innerText = "饮水容量 (ml)";
+            valInput.placeholder = "请输入毫升数";
+            mealGroup.style.display = 'none';
+            timeGroup.style.display = 'block';
+            
+            // 自动采集当前实时时刻
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            document.getElementById('txt-time-stamp').value = timeStr;
+
+            submitBtn.className = "submit-pill water-btn";
+            submitBtn.innerText = "确认记录";
+        }
+
+        sheet.classList.add('active');
+        backdrop.classList.add('active');
+    }
+
+    // 关闭抽屉
+    function closeBottomSheet() {
+        document.getElementById('sheet-panel').classList.remove('active');
+        document.getElementById('sheet-backdrop').classList.remove('active');
+    }
+
+    // 优雅轻量提示框
+    function triggerToast(text) {
+        const toast = document.getElementById('toast-banner');
+        toast.innerText = text;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
+
+    // 提交添加表单数据
+    function commitNewRecord(event) {
+        event.preventDefault();
+        
+        const inputName = document.getElementById('txt-input-name').value.trim();
+        const inputVal = parseInt(document.getElementById('num-metric-val').value, 10);
+        
+        if (!inputName || isNaN(inputVal)) return;
+
+        if (activeModule === 'food') {
+            const selectMeal = document.getElementById('sel-meal-time').value;
+            const now = new Date();
+            const completeTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} · ${selectMeal}`;
+            
+            const newItem = {
+                id: Date.now(),
+                name: inputName,
+                time: completeTime,
+                value: inputVal
+            };
+            dataLogsFood.push(newItem);
+            drawFoodPanel();
+            triggerToast(`已记录：+${inputVal} kcal`);
+        } else {
+            const selectTime = document.getElementById('txt-time-stamp').value || "12:00";
+            
+            const newItem = {
+                id: Date.now(),
+                name: inputName,
+                time: selectTime,
+                value: inputVal
+            };
+            dataLogsWater.push(newItem);
+            drawWaterPanel();
+            triggerToast(`已补水：${inputVal} ml`);
+        }
+
+        closeBottomSheet();
+    }
+
+    window.onload = function() {
+        const weeks = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+        const today = new Date();
+        document.getElementById('nav-date').innerText = `${today.getMonth() + 1}月${today.getDate()}日 ${weeks[today.getDay()]}`;
+
+        // 首次加载初始化
+        drawFoodPanel();
+        drawWaterPanel();
+    };
+</script>
+
+</body>
+</html>

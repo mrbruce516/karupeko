@@ -1,0 +1,364 @@
+# karupeko 项目编码规范
+
+本项目使用 Cline/Cursor 等 AI 助手进行辅助开发。本文档定义了项目的编码规范和 AI 协作指南。
+
+---
+
+## 技术栈
+
+| 层级 | 技术选型 |
+|------|----------|
+| **后端** | FastAPI + Python 3.14 + uv |
+| **前端** | Vue 3 + TypeScript + TailwindCSS |
+| **PWA** | Vite PWA + Workbox |
+| **数据库** | SQLite (开发) / PostgreSQL (生产) |
+| **ORM** | SQLAlchemy 2.0 |
+
+---
+
+## Python 代码风格
+
+### 1. 类型注解
+
+```python
+# ✅ 必须使用类型注解
+from typing import Optional
+from datetime import datetime
+
+def get_food_records(user_id: int, date: str) -> list[FoodRecord]:
+    ...
+
+class FoodService:
+    def create(self, user_id: int, name: str, calories: float) -> FoodRecord:
+        ...
+```
+
+### 2. 函数和类文档字符串
+
+```python
+class FoodService:
+    """饮食记录业务逻辑服务类。
+    
+    处理饮食记录的 CRUD 操作和统计计算。
+    """
+    
+    def get_daily_summary(self, user_id: int, date: str) -> dict:
+        """获取用户指定日期的饮食汇总。
+        
+        Args:
+            user_id: 用户 ID
+            date: 日期字符串，格式 YYYY-MM-DD
+            
+        Returns:
+            包含总热量、目标热量、剩余热量的字典
+        """
+        ...
+```
+
+### 3. 命名约定
+
+```python
+# 类：PascalCase
+class FoodRecord(Base):
+    ...
+
+# 函数/变量：snake_case
+def get_daily_calories(user_id: int) -> float:
+    ...
+
+# 常量：UPPER_SNAKE_CASE
+DEFAULT_CALORIE_TARGET = 2000.0
+DEFAULT_WATER_TARGET = 2000.0
+
+# 私有方法/变量：前导下划线
+def _calculate_progress(current: float, target: float) -> float:
+    ...
+```
+
+### 4. FastAPI 路由规范
+
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+router = APIRouter()
+
+@router.post("/", response_model=FoodRecord, status_code=status.HTTP_201_CREATED)
+async def create_food_record(
+    record: FoodRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建饮食记录"""
+    ...
+```
+
+### 5. 错误处理
+
+```python
+from fastapi import HTTPException, status
+
+def get_food_record(db: Session, record_id: int) -> FoodRecord:
+    record = db.query(FoodRecord).filter(FoodRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Record not found"
+        )
+    return record
+```
+
+---
+
+## TypeScript/Vue 代码风格
+
+### 1. 严格类型
+
+```typescript
+// ✅ 使用具体类型
+interface FoodRecord {
+  id: number;
+  name: string;
+  calories: number;
+  mealType: MealType;
+  recordedAt: string;
+}
+
+type MealType = "早餐" | "午餐" | "晚餐" | "加餐";
+
+// ❌ 避免使用 any
+function handleData(data: any) { }
+```
+
+### 2. 组件命名
+
+```vue
+<!-- 单文件组件：PascalCase -->
+<template>
+  <div class="food-dashboard">
+    <h2>{{ totalCalories }}</h2>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+interface FoodDashboardProps {
+  records: FoodRecord[];
+}
+
+const props = defineProps<FoodDashboardProps>();
+
+const totalCalories = computed(() => 
+  props.records.reduce((sum, r) => sum + r.calories, 0)
+);
+</script>
+```
+
+### 3. Composables 规范
+
+```typescript
+// 自定义 Composables 以 use 开头
+// src/composables/useFoodRecords.ts
+import { ref, computed } from 'vue';
+
+export const useFoodRecords = (userId: number) => {
+  const records = ref<FoodRecord[]>([]);
+  const loading = ref(false);
+  
+  const fetchRecords = async (date: string) => {
+    loading.value = true;
+    try {
+      const data = await foodApi.getRecords(userId, date);
+      records.value = data;
+    } finally {
+      loading.value = false;
+    }
+  };
+  
+  const totalCalories = computed(() => 
+    records.value.reduce((sum, r) => sum + r.calories, 0)
+  );
+  
+  return { 
+    records, 
+    loading, 
+    fetchRecords,
+    totalCalories
+  };
+};
+```
+
+### 4. 组件 Props 类型
+
+```typescript
+// 使用 defineProps 进行类型定义
+interface FoodListProps {
+  records: FoodRecord[];
+}
+
+const props = defineProps<FoodListProps>();
+
+// 使用 defineEmits 定义事件
+const emit = defineEmits<{
+  delete: [id: number];
+  edit: [record: FoodRecord];
+}>();
+```
+
+---
+
+## PWA 开发规范
+
+### 1. iOS Safari 兼容性
+
+```html
+<!-- index.html head 中必须包含的 meta 标签 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="karupeko">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f5f7fa">
+<meta name="apple-touch-startup-image" href="/icons/splash-iphone.png">
+```
+
+### 2. 触摸优化
+
+- 点击区域最小 44x44px（符合 iOS 人机界面指南）
+- 使用 `touch-action: manipulation` 禁用双击缩放
+- 避免 hover 状态作为唯一交互反馈
+- 使用 `-webkit-tap-highlight-color: transparent` 移除点击高亮
+
+### 3. 离线策略
+
+```typescript
+// 优先使用 IndexedDB 存储本地数据
+// 网络恢复后自动同步到服务器
+const syncPendingRequests = async () => {
+  const pending = await getPendingRequests();
+  for (const request of pending) {
+    try {
+      await api.request(request);
+    } catch {
+      // 重试或提示用户
+    }
+  }
+};
+```
+
+### 4. 缓存策略
+
+- **静态资源**：长期缓存（版本号哈希）
+- **API 响应**：短期缓存 + 后台更新
+- **用户数据**：IndexedDB 持久化
+
+## AI 响应要求
+
+### 1. 代码变更说明
+
+在提供代码时，必须：
+- 解释代码的作用和实现逻辑
+- 说明关键设计决策的原因
+- 指出可能的边界情况
+- **PWA 相关**：说明离线行为和缓存策略
+
+### 2. 保持向后兼容
+
+- 修改 API 时需考虑现有调用方
+- 添加新功能时不破坏现有功能
+- 数据库迁移需支持数据保留
+
+### 3. 错误处理
+
+- 所有 API 端点必须有错误处理
+- 前端需处理加载和错误状态
+- 提供友好的错误提示
+
+### 4. 测试覆盖
+
+- 新增功能需提供测试用例
+- 修改代码需更新相关测试
+- 关键业务逻辑需 100% 覆盖
+
+---
+
+## 项目特定规范
+
+### 1. 饮食记录模块 (MoguMogu)
+
+- 热量目标默认为 2000 kcal
+- 餐次类型：早餐、午餐、晚餐、加餐
+- 记录按时间倒序排列
+
+### 2. 饮水记录模块 (GokuGoku)
+
+- 饮水目标默认为 2000 ml
+- 记录需包含时间和容量
+- 支持自定义饮水来源描述
+
+### 3. 日期处理
+
+```python
+# 统一使用 UTC 时间存储
+from datetime import datetime
+
+recorded_at = datetime.utcnow()
+
+# 前端展示时转换为本地时间
+from dateutil import tz
+
+local_time = recorded_at.astimezone(tz.gettz("Asia/Shanghai"))
+```
+
+---
+
+## 提交规范
+
+使用 Conventional Commits 格式：
+
+```
+feat: 添加新功能
+fix: 修复 bug
+docs: 文档更新
+style: 代码格式调整
+refactor: 重构代码
+test: 添加/修改测试
+chore: 构建/工具链相关
+```
+
+示例：
+```
+feat(food): 添加饮食记录删除功能
+fix(water): 修复饮水汇总计算错误
+docs: 更新 API 文档
+```
+
+---
+
+## 开发流程
+
+1. **创建功能分支**
+   ```bash
+   git checkout -b feature/xxx
+   ```
+
+2. **实现功能**
+   - 编写代码
+   - 添加测试
+   - 更新文档
+
+3. **提交代码**
+   ```bash
+   git add .
+   git commit -m "feat: xxx"
+   ```
+
+4. **合并到开发分支**
+   - 创建 Pull Request
+   - 代码审查
+   - 合并代码
+
+---
+
+**提示**: 遵循这些规范可以让 AI 更好地理解你的代码，提供更准确的帮助。
