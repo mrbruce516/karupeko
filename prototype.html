@@ -291,52 +291,107 @@
             color: var(--text-secondary);
         }
 
+        /* iOS 风格底部导航栏 - 灵感源自 iOS 26 设计语言 */
         .ios-tab-bar {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 84px;
-            border-top: 1px solid var(--glass-border);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            padding-bottom: 16px;
+            height: 88px;
+            /* 毛玻璃效果增强 */
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 12px;
+            padding-bottom: 22px;
             z-index: 900;
         }
 
+        /* iOS 风格 Tab 按钮 */
         .tab-btn {
+            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             cursor: pointer;
-            transition: var(--transition-bounce);
-            gap: 4px;
+            transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+            gap: 5px;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        /* 图标容器 - 添加微妙的内阴影 */
         .tab-btn i {
-            font-size: 20px;
-            transition: var(--transition-bounce);
+            font-size: 22px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 0 0 transparent);
         }
 
-        /* 纯文本加呼吸外光的标签高亮 */
+        /* 选中状态 - 食品标签 */
         .tab-btn.active.food-tab {
             color: var(--food-accent);
         }
 
+        .tab-btn.active.food-tab i {
+            transform: scale(1.12);
+            filter: drop-shadow(0 4px 8px rgba(255, 123, 123, 0.35));
+        }
+
+        /* 选中状态 - 饮水标签 */
         .tab-btn.active.water-tab {
             color: var(--water-accent);
         }
 
-        .tab-btn.active i {
-            transform: translateY(-2px) scale(1.05);
+        .tab-btn.active.water-tab i {
+            transform: scale(1.12);
+            filter: drop-shadow(0 4px 8px rgba(84, 160, 255, 0.35));
         }
 
+        /* 标签文字 */
         .tab-btn span {
             font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            opacity: 0.9;
+            transition: opacity 0.2s ease;
+        }
+
+        /* 未激活标签降低透明度 */
+        .tab-btn:not(.active) span {
+            opacity: 0.6;
+        }
+
+        /* iOS 风格底部指示点 */
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .tab-btn.active::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .tab-btn.active.food-tab::after {
+            background: var(--food-accent);
+        }
+
+        .tab-btn.active.water-tab::after {
+            background: var(--water-accent);
         }
 
         /* 微凸起的高雅加号悬浮按钮 */
